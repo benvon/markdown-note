@@ -43,7 +43,7 @@ final class NoteDocumentController: NSDocumentController {
     panel.canChooseDirectories = false
     panel.canChooseFiles = true
     panel.allowsMultipleSelection = false
-    panel.allowedContentTypes = [.plainText]
+    panel.allowedContentTypes = NoteDocument.openPanelContentTypes
 
     let response = panel.runModal()
     guard response == .OK, let url = panel.url else {

@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 APP_NAME="${APP_NAME:-MarkdownNote}"
 BUNDLE_ID="${BUNDLE_ID:-net.benvon.markdown-note}"
+DOCUMENT_TYPE_IDENTIFIER="${DOCUMENT_TYPE_IDENTIFIER:-net.benvon.markdown-note.document}"
 APP_VERSION="${APP_VERSION:-0.1.0}"
 BUILD_NUMBER="${BUILD_NUMBER:-1}"
 MINIMUM_OS_VERSION="${MINIMUM_OS_VERSION:-14.0}"
@@ -57,6 +58,46 @@ cat > "${APP_BUNDLE_PATH}/Contents/Info.plist" <<PLIST
   <string>${MINIMUM_OS_VERSION}</string>
   <key>NSHighResolutionCapable</key>
   <true/>
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>Markdown Note Document</string>
+      <key>CFBundleTypeRole</key>
+      <string>Editor</string>
+      <key>LSHandlerRank</key>
+      <string>Owner</string>
+      <key>LSItemContentTypes</key>
+      <array>
+        <string>${DOCUMENT_TYPE_IDENTIFIER}</string>
+      </array>
+    </dict>
+  </array>
+  <key>UTExportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key>
+      <string>${DOCUMENT_TYPE_IDENTIFIER}</string>
+      <key>UTTypeDescription</key>
+      <string>Markdown Note Document</string>
+      <key>UTTypeConformsTo</key>
+      <array>
+        <string>net.daringfireball.markdown</string>
+        <string>public.plain-text</string>
+        <string>public.text</string>
+      </array>
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key>
+        <array>
+          <string>md</string>
+          <string>markdown</string>
+        </array>
+        <key>public.mime-type</key>
+        <string>text/markdown</string>
+      </dict>
+    </dict>
+  </array>
 </dict>
 </plist>
 PLIST
