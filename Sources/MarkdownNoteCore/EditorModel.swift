@@ -65,12 +65,23 @@ public struct SnapshotLocationMapper {
 
   public func displayLocation(forSourceLocation sourceLocation: Int) -> Int {
     let boundedSource = max(0, min(sourceLocation, sourceLength))
+    let lastSegmentIndex = snapshot.segments.count - 1
 
-    for segment in snapshot.segments {
+    for (index, segment) in snapshot.segments.enumerated() {
       let lowerBound = segment.sourceRange.location
       let upperBound = NSMaxRange(segment.sourceRange)
+      let isLastSegment = index == lastSegmentIndex
+      let containsSourceLocation: Bool
 
-      if boundedSource >= lowerBound && boundedSource <= upperBound {
+      if segment.sourceRange.length == 0 {
+        containsSourceLocation = boundedSource == lowerBound
+      } else {
+        containsSourceLocation =
+          boundedSource >= lowerBound
+          && (boundedSource < upperBound || (isLastSegment && boundedSource == upperBound))
+      }
+
+      if containsSourceLocation {
         if segment.sourceRange.length == 0 {
           return segment.displayRange.location
         }
@@ -141,13 +152,7 @@ public struct EditorModel {
     blocks = BlockResolver.resolveBlocks(in: sourceText)
 
     let boundedCaret = boundedSourceLocation(sourceCaret)
-    let previousActive = activeBlockIndex
     activeBlockIndex = BlockResolver.blockIndex(containingUTF16: boundedCaret, in: blocks)
-
-    _ = RenderInvalidationPlanner.invalidatedBlockIndexes(
-      previousActive: previousActive,
-      newActive: activeBlockIndex
-    )
 
     snapshot = snapshotGenerator.snapshot(
       for: sourceText,
@@ -178,7 +183,6 @@ public struct EditorModel {
     -> Int
   {
     guard let activeSegment = snapshot.activeSegment else {
-      sourceText = liveDisplayText
       let sourceCaret = sourceLocation(forDisplayLocation: selectionDisplayLocation)
       rebuild(forSourceCaret: sourceCaret)
       return sourceCaret
@@ -194,7 +198,6 @@ public struct EditorModel {
 
     let liveDisplay = liveDisplayText as NSString
     guard NSMaxRange(newActiveRange) <= liveDisplay.length else {
-      sourceText = liveDisplayText
       let sourceCaret = sourceLocation(forDisplayLocation: selectionDisplayLocation)
       rebuild(forSourceCaret: sourceCaret)
       return sourceCaret

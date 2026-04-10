@@ -77,6 +77,16 @@ struct MarkdownRenderEngineTests {
 
     #expect(snapshot.displayText == "• link\n")
   }
+
+  @Test
+  func preservesOrderedListNumbersForPassiveItems() {
+    let source = "3. [link](https://example.com)\n"
+    let blocks = BlockResolver.resolveBlocks(in: source)
+    let engine = MarkdownRenderEngine()
+    let snapshot = engine.snapshot(for: source, blocks: blocks, activeBlockIndex: nil)
+
+    #expect(snapshot.displayText == "3. link\n")
+  }
 }
 
 struct RenderInvalidationPlannerTests {
@@ -115,6 +125,52 @@ struct SnapshotLocationMapperTests {
     #expect(mapper.sourceLocation(forDisplayLocation: 5) <= 8)
     #expect(mapper.displayLocation(forSourceLocation: 8) == 6)
     #expect(mapper.displayLocation(forSourceLocation: 0) == 0)
+  }
+
+  @Test
+  func mapsBoundaryToStartOfNextSegment() {
+    let snapshot = RenderSnapshot(
+      displayText: "Title\nBody\n",
+      segments: [
+        DisplaySegment(
+          sourceRange: NSRange(location: 0, length: 8),
+          displayRange: NSRange(location: 0, length: 6),
+          kind: .heading,
+          isActive: false
+        ),
+        DisplaySegment(
+          sourceRange: NSRange(location: 8, length: 5),
+          displayRange: NSRange(location: 6, length: 5),
+          kind: .paragraph,
+          isActive: true
+        ),
+      ]
+    )
+    let mapper = SnapshotLocationMapper(snapshot: snapshot, sourceLength: 13)
+
+    #expect(mapper.displayLocation(forSourceLocation: 8) == 6)
+    #expect(mapper.sourceLocation(forDisplayLocation: 6) == 8)
+  }
+}
+
+private struct InactiveSnapshotGenerator: SnapshotGenerating {
+  func snapshot(
+    for source: String,
+    blocks: [MarkdownBlock],
+    activeBlockIndex: Int?
+  ) -> RenderSnapshot {
+    let sourceLength = (source as NSString).length
+    return RenderSnapshot(
+      displayText: "Rendered\n",
+      segments: [
+        DisplaySegment(
+          sourceRange: NSRange(location: 0, length: sourceLength),
+          displayRange: NSRange(location: 0, length: 9),
+          kind: .paragraph,
+          isActive: false
+        )
+      ]
+    )
   }
 }
 
@@ -189,5 +245,22 @@ struct EditorModelTests {
       #expect(model.canEdit(displayRange: activeRange))
     }
     #expect(!model.canEdit(displayRange: disallowedRange))
+  }
+
+  @Test
+  func doesNotOverwriteSourceWhenNoActiveSegmentExists() {
+    let originalSource = "- **original**\n"
+    var model = EditorModel(
+      sourceText: originalSource,
+      initialSourceCaret: 0,
+      snapshotGenerator: InactiveSnapshotGenerator()
+    )
+
+    _ = model.applyDisplayEdit(
+      liveDisplayText: "Rendered changed\n",
+      selectionDisplayLocation: 4
+    )
+
+    #expect(model.sourceText == originalSource)
   }
 }

@@ -1,11 +1,17 @@
 import AppKit
 import Foundation
 
-@MainActor
 final class NoteDocument: NSDocument {
   static let documentType = "net.benvon.markdown-note.document"
 
-  private(set) var sourceText: String = ""
+  private let sourceTextLock = NSLock()
+  nonisolated(unsafe) private var sourceTextStorage: String = ""
+
+  var sourceText: String {
+    sourceTextLock.lock()
+    defer { sourceTextLock.unlock() }
+    return sourceTextStorage
+  }
 
   override class var autosavesInPlace: Bool {
     true
@@ -16,17 +22,18 @@ final class NoteDocument: NSDocument {
   }
 
   func replaceSourceText(_ newValue: String) {
-    guard sourceText != newValue else {
+    sourceTextLock.lock()
+    let didChange = sourceTextStorage != newValue
+    if didChange {
+      sourceTextStorage = newValue
+    }
+    sourceTextLock.unlock()
+
+    guard didChange else {
       return
     }
 
-    sourceText = newValue
     updateChangeCount(.changeDone)
-  }
-
-  func loadSourceText(_ newValue: String) {
-    sourceText = newValue
-    updateChangeCount(.changeCleared)
   }
 
   override func makeWindowControllers() {
@@ -35,7 +42,8 @@ final class NoteDocument: NSDocument {
   }
 
   override func data(ofType typeName: String) throws -> Data {
-    guard let data = sourceText.data(using: .utf8) else {
+    let snapshot = sourceText
+    guard let data = snapshot.data(using: .utf8) else {
       throw CocoaError(.fileWriteInapplicableStringEncoding)
     }
     return data
@@ -46,8 +54,8 @@ final class NoteDocument: NSDocument {
       throw CocoaError(.fileReadInapplicableStringEncoding)
     }
 
-    MainActor.assumeIsolated {
-      loadSourceText(text)
-    }
+    sourceTextLock.lock()
+    sourceTextStorage = text
+    sourceTextLock.unlock()
   }
 }

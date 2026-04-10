@@ -28,7 +28,8 @@ Or build and run the generated executable directly:
 
 ```bash
 just build
-./.build/arm64-apple-macosx/debug/MarkdownNoteApp
+BIN_DIR=$(swift build --show-bin-path)
+"$BIN_DIR/MarkdownNoteApp"
 ```
 
 Open editor settings with `Markdown Note` > `Settings…` (or `Cmd+,`) to configure:

@@ -120,9 +120,11 @@ public final class MarkdownRenderEngine {
         return "• " + unordered
       }
 
-      let ordered = line.replacing(/^\s*\d+\.\s+/, with: "")
-      if ordered != line {
-        return "1. " + ordered
+      if let orderedMatch = line.firstMatch(of: /^\s*(\d+\.)\s+/) {
+        let orderedPrefix = String(orderedMatch.1)
+        let escapedPrefix = orderedPrefix.replacing(".", with: "\\.")
+        let orderedContent = String(line[orderedMatch.range.upperBound...])
+        return "\(escapedPrefix) \(orderedContent)"
       }
 
       return line
