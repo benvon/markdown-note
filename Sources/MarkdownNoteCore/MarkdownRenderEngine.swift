@@ -68,7 +68,7 @@ public final class MarkdownRenderEngine {
 
   public func renderPassiveBlock(_ sourceBlock: String, kind: MarkdownBlockKind) -> String {
     if kind == .blank {
-      return sourceBlock
+      return normalizeLineEndings(in: sourceBlock)
     }
 
     let source = sourceBlock as NSString
@@ -109,6 +109,12 @@ public final class MarkdownRenderEngine {
     }
 
     return rendered
+  }
+
+  private func normalizeLineEndings(in text: String) -> String {
+    text
+      .replacingOccurrences(of: "\r\n", with: "\n")
+      .replacingOccurrences(of: "\r", with: "\n")
   }
 
   private func renderLine(_ line: String, kind: MarkdownBlockKind) -> String {

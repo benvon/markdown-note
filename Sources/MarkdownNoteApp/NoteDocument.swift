@@ -1,16 +1,42 @@
 import AppKit
 import Foundation
 
+private final class SourceTextStorage: @unchecked Sendable {
+  private let lock = NSLock()
+  private var value: String = ""
+
+  func read() -> String {
+    lock.lock()
+    defer { lock.unlock() }
+    return value
+  }
+
+  func updateIfChanged(to newValue: String) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+
+    guard value != newValue else {
+      return false
+    }
+
+    value = newValue
+    return true
+  }
+
+  func overwrite(with newValue: String) {
+    lock.lock()
+    value = newValue
+    lock.unlock()
+  }
+}
+
 final class NoteDocument: NSDocument {
   static let documentType = "net.benvon.markdown-note.document"
 
-  private let sourceTextLock = NSLock()
-  nonisolated(unsafe) private var sourceTextStorage: String = ""
+  private let sourceStorage = SourceTextStorage()
 
   var sourceText: String {
-    sourceTextLock.lock()
-    defer { sourceTextLock.unlock() }
-    return sourceTextStorage
+    sourceStorage.read()
   }
 
   override class var autosavesInPlace: Bool {
@@ -22,14 +48,7 @@ final class NoteDocument: NSDocument {
   }
 
   func replaceSourceText(_ newValue: String) {
-    sourceTextLock.lock()
-    let didChange = sourceTextStorage != newValue
-    if didChange {
-      sourceTextStorage = newValue
-    }
-    sourceTextLock.unlock()
-
-    guard didChange else {
+    guard sourceStorage.updateIfChanged(to: newValue) else {
       return
     }
 
@@ -54,8 +73,6 @@ final class NoteDocument: NSDocument {
       throw CocoaError(.fileReadInapplicableStringEncoding)
     }
 
-    sourceTextLock.lock()
-    sourceTextStorage = text
-    sourceTextLock.unlock()
+    sourceStorage.overwrite(with: text)
   }
 }

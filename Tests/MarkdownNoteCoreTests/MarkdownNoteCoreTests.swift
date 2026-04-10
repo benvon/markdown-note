@@ -109,6 +109,17 @@ struct MarkdownRenderEngineTests {
     #expect(snapshot.displayText == "line one\nline two\n")
     #expect(!snapshot.displayText.contains("\r"))
   }
+
+  @Test
+  func normalizesCRLFLineEndingsInBlankBlocks() {
+    let source = "\r\ntext\r\n"
+    let blocks = BlockResolver.resolveBlocks(in: source)
+    let engine = MarkdownRenderEngine()
+    let snapshot = engine.snapshot(for: source, blocks: blocks, activeBlockIndex: nil)
+
+    #expect(snapshot.displayText == "\ntext\n")
+    #expect(!snapshot.displayText.contains("\r"))
+  }
 }
 
 struct RenderInvalidationPlannerTests {
