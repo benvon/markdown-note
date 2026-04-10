@@ -69,10 +69,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   private func buildMainMenu() {
     let mainMenu = NSMenu(title: "Main")
+    mainMenu.addItem(makeAppMenuItem())
+    mainMenu.addItem(makeFileMenuItem())
+    NSApp.mainMenu = mainMenu
+  }
 
+  private func makeAppMenuItem() -> NSMenuItem {
     let appMenuItem = NSMenuItem()
-    mainMenu.addItem(appMenuItem)
-
     let appMenu = NSMenu(title: "Markdown Note")
     appMenuItem.submenu = appMenu
 
@@ -92,10 +95,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     appMenu.addItem(
       withTitle: "Quit Markdown Note", action: #selector(NSApplication.terminate(_:)),
       keyEquivalent: "q")
+    return appMenuItem
+  }
 
+  private func makeFileMenuItem() -> NSMenuItem {
     let fileMenuItem = NSMenuItem()
-    mainMenu.addItem(fileMenuItem)
-
     let fileMenu = NSMenu(title: "File")
     fileMenuItem.submenu = fileMenu
 
@@ -127,7 +131,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       title: "Close", action: #selector(closeWindow(_:)), keyEquivalent: "w")
     closeItem.target = self
     fileMenu.addItem(closeItem)
-
-    NSApp.mainMenu = mainMenu
+    return fileMenuItem
   }
 }

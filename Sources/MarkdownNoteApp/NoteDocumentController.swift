@@ -1,6 +1,5 @@
 import AppKit
 import Foundation
-import UniformTypeIdentifiers
 
 @MainActor
 final class NoteDocumentController: NSDocumentController {
@@ -40,10 +39,7 @@ final class NoteDocumentController: NSDocumentController {
 
   func openDocumentWithPanel() {
     let panel = NSOpenPanel()
-    panel.canChooseDirectories = false
-    panel.canChooseFiles = true
-    panel.allowsMultipleSelection = false
-    panel.allowedContentTypes = NoteDocument.openPanelContentTypes
+    configure(panel: panel)
 
     let response = panel.runModal()
     guard response == .OK, let url = panel.url else {
@@ -55,5 +51,12 @@ final class NoteDocumentController: NSDocumentController {
         NSApp.presentError(error)
       }
     }
+  }
+
+  private func configure(panel: NSOpenPanel) {
+    panel.canChooseDirectories = false
+    panel.canChooseFiles = true
+    panel.allowsMultipleSelection = false
+    panel.allowedContentTypes = NoteDocument.openPanelContentTypes
   }
 }
