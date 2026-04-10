@@ -87,6 +87,28 @@ struct MarkdownRenderEngineTests {
 
     #expect(snapshot.displayText == "3. link\n")
   }
+
+  @Test
+  func preservesOrderedListPrefixWithoutEscapeArtifacts() {
+    let source = "3. **bold** item\n"
+    let blocks = BlockResolver.resolveBlocks(in: source)
+    let engine = MarkdownRenderEngine()
+    let snapshot = engine.snapshot(for: source, blocks: blocks, activeBlockIndex: nil)
+
+    #expect(snapshot.displayText == "3. bold item\n")
+    #expect(!snapshot.displayText.contains("\\."))
+  }
+
+  @Test
+  func normalizesCRLFLineEndingsInPassiveBlocks() {
+    let source = "line one\r\nline two\r\n"
+    let blocks = BlockResolver.resolveBlocks(in: source)
+    let engine = MarkdownRenderEngine()
+    let snapshot = engine.snapshot(for: source, blocks: blocks, activeBlockIndex: nil)
+
+    #expect(snapshot.displayText == "line one\nline two\n")
+    #expect(!snapshot.displayText.contains("\r"))
+  }
 }
 
 struct RenderInvalidationPlannerTests {

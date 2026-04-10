@@ -82,12 +82,26 @@ public final class MarkdownRenderEngine {
     while lineLocation < source.length {
       let lineRange = source.lineRange(for: NSRange(location: lineLocation, length: 0))
       let line = source.substring(with: lineRange)
-      let hasTrailingNewline = line.hasSuffix("\n")
-      let content = hasTrailingNewline ? String(line.dropLast()) : line
+      let trailingNewlineLength: Int
+      if line.hasSuffix("\r\n") {
+        trailingNewlineLength = 2
+      } else if line.hasSuffix("\n") || line.hasSuffix("\r") {
+        trailingNewlineLength = 1
+      } else {
+        trailingNewlineLength = 0
+      }
+
+      let content: String
+      if trailingNewlineLength > 0 {
+        let trimmedScalars = line.unicodeScalars.dropLast(trailingNewlineLength)
+        content = String(String.UnicodeScalarView(trimmedScalars))
+      } else {
+        content = line
+      }
 
       let normalizedContent = renderLine(content, kind: kind)
       rendered.append(normalizedContent)
-      if hasTrailingNewline {
+      if trailingNewlineLength > 0 {
         rendered.append("\n")
       }
 
@@ -98,8 +112,27 @@ public final class MarkdownRenderEngine {
   }
 
   private func renderLine(_ line: String, kind: MarkdownBlockKind) -> String {
+    if kind == .listItem {
+      return renderListItemLine(line)
+    }
+
     let strippedBlockMarkers = stripBlockSyntax(from: line, kind: kind)
     return renderInlineMarkdown(strippedBlockMarkers)
+  }
+
+  private func renderListItemLine(_ line: String) -> String {
+    let unordered = line.replacing(/^\s*[-*+]\s+/, with: "")
+    if unordered != line {
+      return "• " + renderInlineMarkdown(unordered)
+    }
+
+    if let orderedMatch = line.firstMatch(of: /^\s*(\d+\.)\s+/) {
+      let orderedPrefix = String(orderedMatch.1)
+      let orderedContent = String(line[orderedMatch.range.upperBound...])
+      return "\(orderedPrefix) " + renderInlineMarkdown(orderedContent)
+    }
+
+    return renderInlineMarkdown(line)
   }
 
   private func stripBlockSyntax(from line: String, kind: MarkdownBlockKind) -> String {
@@ -115,18 +148,6 @@ public final class MarkdownRenderEngine {
         with: ""
       )
     case .listItem:
-      let unordered = line.replacing(/^\s*[-*+]\s+/, with: "")
-      if unordered != line {
-        return "• " + unordered
-      }
-
-      if let orderedMatch = line.firstMatch(of: /^\s*(\d+\.)\s+/) {
-        let orderedPrefix = String(orderedMatch.1)
-        let escapedPrefix = orderedPrefix.replacing(".", with: "\\.")
-        let orderedContent = String(line[orderedMatch.range.upperBound...])
-        return "\(escapedPrefix) \(orderedContent)"
-      }
-
       return line
     case .blank, .paragraph:
       return line

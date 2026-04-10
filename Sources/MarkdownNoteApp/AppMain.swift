@@ -116,7 +116,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     fileMenu.addItem(saveItem)
 
     let saveAsItem = NSMenuItem(
-      title: "Save As…", action: #selector(saveDocumentAs(_:)), keyEquivalent: "S")
+      title: "Save As…", action: #selector(saveDocumentAs(_:)), keyEquivalent: "s")
     saveAsItem.keyEquivalentModifierMask = [.command, .shift]
     saveAsItem.target = self
     fileMenu.addItem(saveAsItem)
