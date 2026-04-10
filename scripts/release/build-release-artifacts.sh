@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 APP_NAME="${APP_NAME:-MarkdownNote}"
 BUNDLE_ID="${BUNDLE_ID:-net.benvon.markdown-note}"
 DOCUMENT_TYPE_IDENTIFIER="${DOCUMENT_TYPE_IDENTIFIER:-net.benvon.markdown-note.document}"
@@ -15,6 +15,36 @@ APP_BUNDLE_PATH="${STAGE_DIR}/${APP_NAME}.app"
 DMG_STAGE_DIR="${STAGE_DIR}/dmg-root"
 
 cd "${ROOT_DIR}"
+
+if [[ -z "${OUTPUT_DIR}" ]]; then
+  echo "OUTPUT_DIR must not be empty" >&2
+  exit 1
+fi
+
+if [[ "${OUTPUT_DIR}" != /* ]]; then
+  OUTPUT_DIR="${ROOT_DIR}/${OUTPUT_DIR}"
+fi
+
+if [[ "${OUTPUT_DIR}" == "/" ]]; then
+  echo "Refusing to use unsafe OUTPUT_DIR: ${OUTPUT_DIR}" >&2
+  exit 1
+fi
+
+OUTPUT_DIR_PARENT="$(cd "$(dirname "${OUTPUT_DIR}")" && pwd -P)"
+OUTPUT_DIR_BASENAME="$(basename "${OUTPUT_DIR}")"
+OUTPUT_DIR="${OUTPUT_DIR_PARENT}/${OUTPUT_DIR_BASENAME}"
+
+case "${OUTPUT_DIR}" in
+  "/"|"${ROOT_DIR}")
+    echo "Refusing to use unsafe OUTPUT_DIR: ${OUTPUT_DIR}" >&2
+    exit 1
+    ;;
+esac
+
+if [[ "${OUTPUT_DIR}" != "${ROOT_DIR}"/* ]]; then
+  echo "OUTPUT_DIR must be within the repository: ${OUTPUT_DIR}" >&2
+  exit 1
+fi
 
 rm -rf "${STAGE_DIR}" "${OUTPUT_DIR}"
 mkdir -p "${APP_BUNDLE_PATH}/Contents/MacOS" "${APP_BUNDLE_PATH}/Contents/Resources" "${OUTPUT_DIR}"
@@ -66,7 +96,7 @@ cat > "${APP_BUNDLE_PATH}/Contents/Info.plist" <<PLIST
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>LSHandlerRank</key>
-      <string>Owner</string>
+      <string>Alternate</string>
       <key>LSItemContentTypes</key>
       <array>
         <string>${DOCUMENT_TYPE_IDENTIFIER}</string>
