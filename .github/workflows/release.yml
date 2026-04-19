@@ -1,0 +1,23 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: benvon/reusable-workflows/.github/workflows/macos-script-release.yml@cd087ac5ce4adfc261f319ac5df2545e02ec60cc
+    with:
+      build_command: |
+        VERSION="${GITHUB_REF_NAME#v}"
+        APP_VERSION="${VERSION}" \
+        BUILD_NUMBER="${GITHUB_RUN_NUMBER}" \
+        ./scripts/release/build-release-artifacts.sh
+      artifact_globs: |
+        dist/*.zip
+        dist/*.pkg
+        dist/*.dmg
